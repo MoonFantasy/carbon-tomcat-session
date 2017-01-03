@@ -95,7 +95,7 @@ public class SpyMemcachedStore extends StoreBase {
     public void setNodes(String nodesString) {
         log.debug("Set nodes :" + nodesString);
         String[] nodeList = nodesString.split(",");
-        Pattern pattern = Pattern.compile("^\\s*((\\w+://)*[\\w\\d_\\-]+(\\.[\\w\\d_\\-])*):(\\d*)\\s*$|^\\s*((\\w+://)*[\\w\\d_\\-]+(\\.[\\w\\d_\\-])*)\\s*$");
+        Pattern pattern = Pattern.compile("^\\s*((\\w+://)*[\\w\\d_\\-]+(\\.[\\w\\d_\\-]+)*):(\\d*)\\s*$|^\\s*((\\w+://)*[\\w\\d_\\-]+(\\.[\\w\\d_\\-]+)*)\\s*$");
         String nodeStr;
         for (String node : nodeList) {
             if (node.trim().length() == 0)
