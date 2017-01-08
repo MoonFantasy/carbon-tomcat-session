@@ -1,46 +1,47 @@
 package jz.carbon.tomcat.sesssion.store;
 
-import org.apache.catalina.Session;
-import org.apache.catalina.session.StoreBase;
-
-import java.io.IOException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Created by jack on 2016/12/31.
  */
-public class JedisStore extends AbstractCacheStore {
+public class RedisStore extends AbstractCacheStore {
+    private static final Log log = LogFactory.getLog(RedisStore.class);
+    private int maxPool = 0;
+    private int timeout = 0;
 
-    public JedisStore() {
+    public RedisStore() {
+    }
 
+    public String getInfo() {
+        return getStoreName() + "/1.0";
+
+    }
+
+    public String getStoreName() {
+        return RedisStore.class.getSimpleName();
+    }
+
+    public void setMaxPool(int maxPool) {
+        this.maxPool = maxPool;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getMaxPool() {
+        return this.maxPool;
+    }
+
+    public int getTimeout() {
+        return this.timeout;
     }
 
     protected IFCacheClient createNewCacheClient() {
-        return null;
-    }
-
-    public int getSize() throws IOException {
-        return 0;
-    }
-
-    public String[] keys() throws IOException {
-        return new String[0];
-    }
-
-    public Session load(String id)
-            throws ClassNotFoundException, IOException {
-        return null;
-    }
-
-    public void remove(String id) throws IOException {
-
-    }
-
-    public void clear() throws IOException {
-
-    }
-
-    public void save(Session session) throws IOException {
-
+        RedisCacheClient cacheClient = new RedisCacheClient(this);
+        return cacheClient;
     }
 
 }

@@ -1,18 +1,16 @@
 package jz.carbon.tomcat.sesssion.store;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by jack on 2016/12/21.
  */
-public interface ICacheNode {
-    void setHost(String host);
+public interface IFCacheNode {
+    void setUri(URI uri);
 
-    String getHost();
-
-    void setPort(int port);
-
-    int getPort();
+    URI getUri();
 
     byte[] get(String key) throws CacheNodeException;
 
@@ -24,6 +22,11 @@ public interface ICacheNode {
 
     void clean() throws CacheNodeException;
 
+    int getKeyCount(String prefix) throws CacheNodeException;
+
     Map<String, String> getStats(String prefix) throws CacheNodeException;
 
+    List<String> getKeys(String prefix) throws CacheNodeException;
+
+    void close();
 }

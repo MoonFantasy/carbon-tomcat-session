@@ -10,5 +10,4 @@ public class CTSession extends StandardSession {
     public CTSession(Manager manager) {
         super(manager);
     }
-
 }

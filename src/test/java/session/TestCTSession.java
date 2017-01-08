@@ -16,22 +16,17 @@
  */
 package session;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-
 import jz.carbon.tomcat.sesssion.CTSession;
 import jz.carbon.tomcat.sesssion.CTSessionPersistentManager;
+import org.apache.catalina.Manager;
+import org.apache.catalina.core.StandardContext;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.apache.catalina.Manager;
-import org.apache.catalina.core.StandardContext;
+import java.io.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestCTSession {
 
@@ -124,6 +119,7 @@ public class TestCTSession {
             throws IOException, ClassNotFoundException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
+
         source.writeObjectData(oos);
 
         CTSession dest = new CTSession(TEST_MANAGER);

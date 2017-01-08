@@ -1,37 +1,48 @@
 package jz.carbon.tomcat.sesssion.store;
 
+import org.apache.catalina.session.StoreBase;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.net.URI;
 
 /**
  * Created by jack on 2016/12/31.
  */
-public class JedisCacheClient implements IFCacheClient {
-    public void addNode(URI uri) {
+public class RedisCacheClient extends AbstractCacheClient {
+    private static final Log log = LogFactory.getLog(RedisCacheClient.class);
 
-    }
-    public void addNode(IFCacheNode node) {
-
-    }
-    public byte[] get(String key) {
-        return null;
+    public RedisCacheClient() {
+        super(null);
     }
 
-    public byte[] getAndTouch(String key, int expiration) {
-        return null;
+    public RedisCacheClient(AbstractCacheStore store) {
+        super(store);
     }
-    public boolean set(String key, byte[] value, int expiration) {
-        return false;
-    }
-    public boolean delete(String key) {
-        return false;
-    }
-    public int getSize() {
-        return 0;
-    }
-    public void clean() {
 
+    protected IFCacheNode createNewCacheNode(URI uri) {
+        RedisCacheNode node = new RedisCacheNode(uri);
+        StoreBase store = getStore();
+        if (store != null && store instanceof RedisStore) {
+            node.setMaxPool(((RedisStore) store).getMaxPool());
+            node.setTimeout(((RedisStore) store).getTimeout());
+        }
+        return node;
     }
-    public void backgroundWork() {
 
+    public String getUriScheme() {
+        return "redis";
+    }
+
+    public String getUriSslScheme() {
+        return "rediss";
+    }
+
+    public String getDriverName() {
+        return "Redis";
+    }
+
+    public int getDefaultPort() {
+        return 6379;
     }
 }

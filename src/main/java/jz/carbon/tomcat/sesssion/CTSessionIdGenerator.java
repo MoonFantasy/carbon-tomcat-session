@@ -16,9 +16,10 @@ public class CTSessionIdGenerator extends SessionIdGeneratorBase {
     public CTSessionIdGenerator() {
 
     }
+
     public String generateSessionId(String route) {
         int sessionIdLength = this.getSessionIdLength();
-        int maxByteLength = ((int)(sessionIdLength / 4)) * 3;
+        int maxByteLength = sessionIdLength / 4 * 3;
         byte[] random = new byte[16];
         byte[] randomAppended = new byte[maxByteLength];
         byte[] routeBytes = null;
@@ -32,9 +33,9 @@ public class CTSessionIdGenerator extends SessionIdGeneratorBase {
             routeBytes = route.getBytes(Charset.forName("UTF-8"));
         }
 
-        while(resultLenBytes < maxByteLength) {
+        while (resultLenBytes < maxByteLength) {
             this.getRandomBytes(random);
-            System.arraycopy(random, 0, randomAppended, resultLenBytes, (maxByteLength - resultLenBytes > random.length)? random.length : maxByteLength - resultLenBytes);
+            System.arraycopy(random, 0, randomAppended, resultLenBytes, (maxByteLength - resultLenBytes > random.length) ? random.length : maxByteLength - resultLenBytes);
             resultLenBytes += random.length;
         }
         if (routeBytes != null && routeBytes.length > 0) {

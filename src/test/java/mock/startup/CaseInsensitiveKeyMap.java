@@ -16,13 +16,7 @@
  */
 package mock.startup;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A Map implementation that uses case-insensitive (using {@link
@@ -115,18 +109,15 @@ public class CaseInsensitiveKeyMap<V> extends AbstractMap<String,V> {
             this.iterator = iterator;
         }
 
-        @Override
         public boolean hasNext() {
             return iterator.hasNext();
         }
 
-        @Override
         public Entry<String,V> next() {
             Entry<Key,V> entry = iterator.next();
             return new EntryImpl<V>(entry.getKey().getKey(), entry.getValue());
         }
 
-        @Override
         public void remove() {
             iterator.remove();
         }
@@ -143,17 +134,14 @@ public class CaseInsensitiveKeyMap<V> extends AbstractMap<String,V> {
             this.value = value;
         }
 
-        @Override
         public String getKey() {
             return key;
         }
 
-        @Override
         public V getValue() {
             return value;
         }
 
-        @Override
         public V setValue(V value) {
             throw new UnsupportedOperationException();
         }

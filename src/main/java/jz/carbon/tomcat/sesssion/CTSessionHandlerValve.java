@@ -18,13 +18,16 @@ public class CTSessionHandlerValve extends ValveBase {
     private static final Log log = LogFactory.getLog(CTSessionHandlerValve.class);
     protected CTSessionPersistentManager manager = null;
     protected String requestUriIgnorePattern = null;
+
     public void setCTSessionPersistentManager(CTSessionPersistentManager manager) {
         this.manager = manager;
 
     }
+
     public void setSequestUriIgnorePattern(String pattern) {
         this.requestUriIgnorePattern = pattern;
     }
+
     public CTSessionPersistentManager getCTSessionPersistentManager() {
         return manager;
     }

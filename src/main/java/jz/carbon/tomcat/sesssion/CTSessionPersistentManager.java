@@ -1,6 +1,9 @@
 package jz.carbon.tomcat.sesssion;
 
-import org.apache.catalina.*;
+import org.apache.catalina.LifecycleException;
+import org.apache.catalina.Session;
+import org.apache.catalina.SessionIdGenerator;
+import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.session.StandardSession;
@@ -31,6 +34,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     protected ThreadLocal<Boolean> currentSessionIsPersisted = new ThreadLocal<Boolean>();
     protected ThreadLocal<Boolean> currentIgnore = new ThreadLocal<Boolean>();
     protected CTSessionHandlerValve handlerValve;
+
     static {
         try {
             Field fd = CarbonTomcatSessionPersistentManager.class.getDeclaredField("allowedClasses");
@@ -47,6 +51,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     public void setRequestUriIgnorePattern(String ignoreSavePattern) {
         this.requestUriIgnorePattern = ignoreSavePattern;
     }
+
     public void setSessionIdGeneratorClassName(String className) throws Exception {
         Class<?> sessionIdGeneratorClasss = null;
         try {
@@ -66,6 +71,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
             this.sessionIdGeneratorClass = (Class<? extends SessionIdGenerator>) sessionIdGeneratorClasss;
         }
     }
+
     public CTSessionPersistentManager(int owenTenantId) {
         super(owenTenantId);
     }
@@ -74,7 +80,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
     public void addBackgroundWork(Callable<Void> work) {
-        synchronized(backgroundWorks) {
+        synchronized (backgroundWorks) {
             backgroundWorks.add(work);
         }
     }
@@ -146,7 +152,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
         try {
             writeSession(session);
         } catch (IOException e) {
-            log.error("add write session fail ", e);
+            log.error("Adding session fail", e);
         }
     }
 
@@ -156,13 +162,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
         if (session != null) {
             currentSession.set(session);
             currentSessionId.set(sessionId);
-            try {
-                writeSession(session);
-                currentSessionIsPersisted.set(true);
-            } catch (IOException e) {
-                log.error("createSession write session fail ", e);
-                currentSessionIsPersisted.set(false);
-            }
+            currentSessionIsPersisted.set(false);
         }
         return session;
     }
@@ -192,14 +192,10 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
     protected Session swapIn(String id) throws IOException {
-        if (isIgnoreRequest())
-            return null;
         return super.swapIn(id);
     }
 
     protected void writeSession(Session session) throws IOException {
-        if (isIgnoreRequest())
-            return;
         super.writeSession(session);
     }
 

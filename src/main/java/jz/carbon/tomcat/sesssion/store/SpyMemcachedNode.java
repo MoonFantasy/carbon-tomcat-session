@@ -5,21 +5,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by jack on 2016/12/22.
  */
-public class SpyMemcachedNode implements ICacheNode {
+public class SpyMemcachedNode implements IFCacheNode {
 
     private static final Log log = LogFactory.getLog(SpyMemcachedNode.class);
-    private String host;
-    private int port;
+    private URI uri;
     private MemcachedClientIF memcachedClient = null;
     static private Class memcachedClientClass = MemcachedClient.class;
     private long timeout = 2000;
@@ -30,12 +31,12 @@ public class SpyMemcachedNode implements ICacheNode {
         System.setProperties(systemProperties);
     }
 
-    public SpyMemcachedNode(String host, int port) {
-        setHost(host);
-        setPort(port);
+    public SpyMemcachedNode(URI uri) {
+        this.setUri(uri);
     }
 
     public void setMemcachedClient(MemcachedClientIF memcachedClient) {
+        close();
         this.memcachedClient = memcachedClient;
     }
 
@@ -49,54 +50,52 @@ public class SpyMemcachedNode implements ICacheNode {
 
     public MemcachedClientIF getNewMemcachedClient() throws IOException {
         ArrayList<InetSocketAddress> addrs = new ArrayList<InetSocketAddress>();
-        addrs.add(new InetSocketAddress(host, port));
+        addrs.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
         try {
-            return (MemcachedClientIF) memcachedClientClass.getConstructor(ConnectionFactory.class, List.class).newInstance(new BinaryConnectionFactory(), addrs);
-        } catch (InvocationTargetException e) {
+            return (MemcachedClientIF) memcachedClientClass
+                    .getConstructor(ConnectionFactory.class, List.class)
+                    .newInstance(new BinaryConnectionFactory(), addrs);
+        } catch (Exception e) {
             log.error("Create Spy Memcached client fail " + e.getCause().getMessage() + " " + e.getCause().getCause());
             if (e.getCause() instanceof IOException)
                 throw (IOException) e.getCause();
             else if (e.getCause() instanceof UnresolvedAddressException)
                 throw (UnresolvedAddressException) e.getCause();
             return null;
-        } catch (Exception e) {
-            log.error("Create Spy Memcached client fail " + e.getMessage() + " " + e.getCause());
-            return null;
         }
     }
 
-    public MemcachedClientIF getMemcachedClient() throws IOException {
+    public MemcachedClientIF getMemcachedClient() throws CacheNodeException {
         if (memcachedClient == null) {
-            memcachedClient = getNewMemcachedClient();
+            try {
+                memcachedClient = getNewMemcachedClient();
+            } catch (IOException e) {
+                throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
+            } catch (UnresolvedAddressException e) {
+                throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
+            }
         }
         return memcachedClient;
     }
 
-    public void setHost(String host) {
-        this.host = host;
+    public void setUri(URI uri) {
+        this.uri = uri;
+    }
+
+    public URI getUri() {
+        return this.uri;
     }
 
     public String getHost() {
-        return this.host;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+        return uri.getHost();
     }
 
     public int getPort() {
-        return this.port;
+        return uri.getPort();
     }
 
     public byte[] get(String key) throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
         Future<Object> future = null;
         try {
             future = client.asyncGet(key);
@@ -104,27 +103,13 @@ public class SpyMemcachedNode implements ICacheNode {
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
             return null;
-        } catch (InterruptedException e) {
-            throw new CacheNodeException("Interrupted waiting for value" + e.getMessage() + " " + e.getCause(), e);
-        } catch (ExecutionException e) {
-            throw new CacheNodeException("Execution Exception " + e.getMessage() + " " + e.getCause(), e);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new CacheNodeException("Timeout waiting for value: " + e.getMessage() + " " + e.getCause(), e);
         } catch (Exception e) {
-            throw new CacheNodeException(e.getMessage() + " " + e.getCause(), e);
+            throw new CacheNodeException(e.getMessage(), e);
         }
     }
 
     public byte[] getAntTouch(String key, int expiration) throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
         Future<CASValue<Object>> future = null;
         try {
             future = client.asyncGetAndTouch(key, expiration);
@@ -135,28 +120,14 @@ public class SpyMemcachedNode implements ICacheNode {
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
             return null;
-        } catch (InterruptedException e) {
-            throw new CacheNodeException("Interrupted waiting for value" + e.getMessage() + " " + e.getCause(), e);
-        } catch (ExecutionException e) {
-            throw new CacheNodeException("Execution Exception " + e.getMessage() + " " + e.getCause(), e);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new CacheNodeException("Timeout waiting for value: " + e.getMessage() + " " + e.getCause(), e);
         } catch (Exception e) {
-            throw new CacheNodeException(e.getMessage() + " " + e.getCause(), e);
+            throw new CacheNodeException(e.getMessage(), e);
         }
 
     }
 
     public boolean set(String key, byte[] data, int expiration) throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
         Future<Boolean> future = null;
         try {
             future = client.set(key, expiration, data);
@@ -166,27 +137,13 @@ public class SpyMemcachedNode implements ICacheNode {
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
             return false;
-        } catch (InterruptedException e) {
-            throw new CacheNodeException("Interrupted waiting for value " + e.getMessage() + " " + e.getCause(), e);
-        } catch (ExecutionException e) {
-            throw new CacheNodeException("Execution Exception " + e.getMessage() + " " + e.getCause(), e);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new CacheNodeException("Timeout waiting for value: " + e.getMessage() + " " + e.getCause(), e);
         } catch (Exception e) {
-            throw new CacheNodeException(e.getMessage() + " " + e.getCause(), e);
+            throw new CacheNodeException(e.getMessage(), e);
         }
     }
 
     public boolean remove(String key) throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
         Future<Boolean> future = null;
         try {
             future = client.delete(key);
@@ -194,54 +151,26 @@ public class SpyMemcachedNode implements ICacheNode {
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
             return false;
-        } catch (InterruptedException e) {
-            throw new CacheNodeException("Interrupted waiting for value " + e.getMessage() + " " + e.getCause(), e);
-        } catch (ExecutionException e) {
-            throw new CacheNodeException("Execution Exception " + e.getMessage() + " " + e.getCause(), e);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new CacheNodeException("Timeout waiting for value: " + e.getMessage() + " " + e.getCause(), e);
         } catch (Exception e) {
-            throw new CacheNodeException(e.getMessage() + " " + e.getCause(), e);
+            throw new CacheNodeException(e.getMessage(), e);
         }
     }
 
     public void clean() throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
         Future<Boolean> future = null;
         try {
             future = client.flush();
             future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
-        } catch (InterruptedException e) {
-            throw new CacheNodeException("Interrupted waiting for value" + e.getMessage() + " " + e.getCause(), e);
-        } catch (ExecutionException e) {
-            throw new CacheNodeException("Execution Exception " + e.getMessage() + " " + e.getCause(), e);
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new CacheNodeException("Timeout waiting for value: " + e.getMessage() + " " + e.getCause(), e);
         } catch (Exception e) {
-            throw new CacheNodeException(e.getMessage() + " " + e.getCause(), e);
+            throw new CacheNodeException(e.getMessage(), e);
         }
     }
 
     public Map<String, String> getStats(String prefix) throws CacheNodeException {
-        MemcachedClientIF client = null;
-        try {
-            client = getMemcachedClient();
-        } catch (IOException e) {
-            throw new CacheNodeException("IO Error " + e.getMessage() + " " + e.getCause(), e);
-        } catch (UnresolvedAddressException e) {
-            throw new CacheNodeException("Unresolved Address " + e.getMessage() + " " + e.getCause(), e);
-        }
+        MemcachedClientIF client = getMemcachedClient();
 
         try {
             Map<SocketAddress, Map<String, String>> stats = client.getStats(prefix);
@@ -255,5 +184,34 @@ public class SpyMemcachedNode implements ICacheNode {
             throw new CacheNodeException(e.getClass().getName() + " Get State Fail: " + e.getMessage() + " " + e.getCause(), e);
         }
         return null;
+    }
+
+    public int getKeyCount(String keyPrefix) throws CacheNodeException {
+        Map<String, String> stats = getStats(null);
+        int result = 0;
+        result += Integer.parseInt(stats.get("total_items"));
+        if (stats.get("total_items") != null) {
+            try {
+                result += Integer.parseInt(stats.get("total_items"));
+            } catch (IllegalArgumentException e) {
+            }
+        }
+        if (stats.get("evicted_unfetched") != null) {
+            try {
+                result -= Integer.parseInt(stats.get("evicted_unfetched"));
+            } catch (IllegalArgumentException e) {
+            }
+        }
+        return result;
+    }
+    public List<String> getKeys(String prefix) throws CacheNodeException {
+        return new ArrayList<String>();
+    }
+
+    public void close() {
+        if (memcachedClient != null) {
+            memcachedClient.shutdown();
+            memcachedClient = null;
+        }
     }
 }
