@@ -16,12 +16,28 @@
  */
 package session;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import org.apache.catalina.*;
+import org.apache.catalina.connector.Connector;
+import org.apache.catalina.core.AprLifecycleListener;
+import org.apache.catalina.core.StandardServer;
+import org.apache.catalina.session.ManagerBase;
+import org.apache.catalina.session.StandardManager;
+import org.apache.catalina.startup.CatalinaProperties;
+import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.valves.AccessLogValve;
+import org.apache.tomcat.util.buf.ByteChunk;
+import org.apache.tomcat.websocket.CaseInsensitiveKeyMap;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
@@ -30,35 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import static org.junit.Assert.fail;
-
-import org.apache.catalina.startup.CatalinaProperties;
-import org.apache.catalina.startup.Tomcat;
-import org.apache.tomcat.websocket.CaseInsensitiveKeyMap;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-
-import org.apache.catalina.Container;
-import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleState;
-import org.apache.catalina.Manager;
-import org.apache.catalina.Server;
-import org.apache.catalina.Service;
-import org.apache.catalina.connector.Connector;
-import org.apache.catalina.core.AprLifecycleListener;
-import org.apache.catalina.core.StandardServer;
-import org.apache.catalina.session.ManagerBase;
-import org.apache.catalina.session.StandardManager;
-import org.apache.catalina.valves.AccessLogValve;
-import org.apache.tomcat.util.buf.ByteChunk;
 
 /**
  * Base test case that provides a Tomcat instance for each test - mainly so we
@@ -149,7 +137,7 @@ public abstract class TomcatBaseTest extends LoggingBaseTest {
         // Cannot delete the whole tempDir, because logs are there,
         // but delete known subdirectories of it.
         addDeleteOnTearDown(new File(catalinaBase, "webapps"));
-        addDeleteOnTearDown(new File(catalinaBase, "work"));
+        addDeleteOnTearDown(new File(catalinaBase, "Work"));
     }
 
     protected String getProtocol() {

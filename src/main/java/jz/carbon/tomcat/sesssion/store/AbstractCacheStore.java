@@ -46,11 +46,16 @@ abstract public class AbstractCacheStore extends StoreBase {
     public IFCacheClient getCacheClient() {
         if (cacheClient == null) {
             cacheClient = createNewCacheClient();
+            cacheClient.setKeyPrefix(keyPrefix);
         }
         return cacheClient;
     }
 
-    private String transfromToUriString(String str) {
+    public void setKeyPrefix(String prefix) {
+        this.keyPrefix = prefix;
+    }
+
+    protected String transfromToUriString(String str) {
         IFCacheClient client = getCacheClient();
         String schemePatternStr = "[A-Za-z][A-Za-z0-9+\\-.]*";
         String ipParttenStr = "(?:(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])";
@@ -98,7 +103,7 @@ abstract public class AbstractCacheStore extends StoreBase {
                 if (uri.getHost() == null || uri.getHost().length() == 0)
                     throw new URISyntaxException(node.trim(), "HostName is empty");
             } catch (URISyntaxException e) {
-                log.error("Invalid format ", e);
+                log.warn("Invalid format ", e);
                 continue;
             }
             client.addNode(uri);
@@ -113,7 +118,7 @@ abstract public class AbstractCacheStore extends StoreBase {
     @Override
     protected void initInternal() {
         if (manager instanceof CTSessionPersistentManager) {
-            ((CTSessionPersistentManager) manager).addBackgroundWork(new work());
+            ((CTSessionPersistentManager) manager).addBackgroundWork(new Work());
         }
     }
 
@@ -142,23 +147,6 @@ abstract public class AbstractCacheStore extends StoreBase {
         return bos.toByteArray();
     }
 
-    protected class work implements Callable<Void> {
-        long lastRunTimeStemp = 0;
-
-        public Void call() throws Exception {
-            long now = System.currentTimeMillis() / 1000;
-            if (now - backgroundInterval < lastRunTimeStemp)
-                return null;
-            IFCacheClient cachedClient = getCacheClient();
-            if (cachedClient != null) {
-                log.debug("Start store background works " + now);
-                cachedClient.backgroundWork();
-            }
-            lastRunTimeStemp = System.currentTimeMillis() / 1000;
-            return null;
-        }
-    }
-
     public int getSize() throws IOException {
         IFCacheClient client = getCacheClient();
         return client.getSize();
@@ -168,7 +156,7 @@ abstract public class AbstractCacheStore extends StoreBase {
         IFCacheClient client = getCacheClient();
         ArrayList<String> keys = new ArrayList<String>();
         keys.addAll(client.getKeys());
-        return (String[]) keys.toArray();
+        return keys.toArray(new String[keys.size()]);
     }
 
     public Session load(String id) throws ClassNotFoundException, IOException {
@@ -198,4 +186,20 @@ abstract public class AbstractCacheStore extends StoreBase {
                         : session.getMaxInactiveInterval());
     }
 
+    protected class Work implements Callable<Void> {
+        long lastRunTimeStemp = 0;
+
+        public Void call() throws Exception {
+            long now = System.currentTimeMillis() / 1000;
+            if (now - backgroundInterval < lastRunTimeStemp)
+                return null;
+            IFCacheClient cachedClient = getCacheClient();
+            if (cachedClient != null) {
+                log.debug("Start store background works " + now);
+                cachedClient.backgroundWork();
+            }
+            lastRunTimeStemp = System.currentTimeMillis() / 1000;
+            return null;
+        }
+    }
 }

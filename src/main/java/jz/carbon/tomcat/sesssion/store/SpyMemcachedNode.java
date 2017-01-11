@@ -51,8 +51,9 @@ public class SpyMemcachedNode implements IFCacheNode {
     public MemcachedClientIF getNewMemcachedClient() throws IOException {
         ArrayList<InetSocketAddress> addrs = new ArrayList<InetSocketAddress>();
         addrs.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
+        MemcachedClientIF  memcachedClient = null;
         try {
-            return (MemcachedClientIF) memcachedClientClass
+            memcachedClient = (MemcachedClientIF) memcachedClientClass
                     .getConstructor(ConnectionFactory.class, List.class)
                     .newInstance(new BinaryConnectionFactory(), addrs);
         } catch (Exception e) {
@@ -61,8 +62,8 @@ public class SpyMemcachedNode implements IFCacheNode {
                 throw (IOException) e.getCause();
             else if (e.getCause() instanceof UnresolvedAddressException)
                 throw (UnresolvedAddressException) e.getCause();
-            return null;
         }
+        return memcachedClient;
     }
 
     public MemcachedClientIF getMemcachedClient() throws CacheNodeException {
@@ -171,25 +172,24 @@ public class SpyMemcachedNode implements IFCacheNode {
 
     public Map<String, String> getStats(String prefix) throws CacheNodeException {
         MemcachedClientIF client = getMemcachedClient();
-
+        Map<String, String> result = null;
         try {
             Map<SocketAddress, Map<String, String>> stats = client.getStats(prefix);
             if (stats == null)
                 return new HashMap<String, String>();
 
             for (SocketAddress address : stats.keySet()) {
-                return stats.get(address);
+                result = stats.get(address);
             }
         } catch (Exception e) {
             throw new CacheNodeException(e.getClass().getName() + " Get State Fail: " + e.getMessage() + " " + e.getCause(), e);
         }
-        return null;
+        return result;
     }
 
     public int getKeyCount(String keyPrefix) throws CacheNodeException {
         Map<String, String> stats = getStats(null);
         int result = 0;
-        result += Integer.parseInt(stats.get("total_items"));
         if (stats.get("total_items") != null) {
             try {
                 result += Integer.parseInt(stats.get("total_items"));

@@ -43,4 +43,6 @@ public interface IFCacheClient {
 
     void setKeyPrefix(String keyPrefix);
 
+    String getDriverName();
+
 }

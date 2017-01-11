@@ -36,13 +36,18 @@ public class CTSessionHandlerValve extends ValveBase {
         try {
             if (manager != null) {
                 if (requestUriIgnorePattern != null && requestUriIgnorePattern.length() > 0) {
+                    boolean isMatch = false;
                     try {
                         Pattern pattern = Pattern.compile(requestUriIgnorePattern, Pattern.CASE_INSENSITIVE);
                         Matcher matcher = pattern.matcher(request.getRequestURI());
                         if (matcher.find())
-                            manager.setCurrentIgnore(true);
+                            isMatch = true;
                     } catch (IllegalArgumentException e) {
                         log.warn("Wrong requestUriIgnorePattern format ", e);
+                    } catch (Exception e) {
+                        log.warn(e);
+                    } finally {
+                        manager.setCurrentIgnore(isMatch);
                     }
                 }
             }

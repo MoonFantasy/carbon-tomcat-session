@@ -30,4 +30,10 @@ public class TestJedisCacheClient {
         client.addNode(new URI("dummy://127.0.0.1:32769"));
         assertEquals(3, client.getNodeSize());
     }
+
+    @Test
+    public void testGetDefaultPort() throws Exception {
+        RedisCacheClient client = new RedisCacheClient();
+        assertEquals(RedisCacheClient.DEFAULT_PORT, client.getDefaultPort());
+    }
 }

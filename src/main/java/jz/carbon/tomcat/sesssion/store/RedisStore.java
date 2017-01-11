@@ -16,11 +16,10 @@ public class RedisStore extends AbstractCacheStore {
 
     public String getInfo() {
         return getStoreName() + "/1.0";
-
     }
 
     public String getStoreName() {
-        return RedisStore.class.getSimpleName();
+        return getClass().getSimpleName();
     }
 
     public void setMaxPool(int maxPool) {

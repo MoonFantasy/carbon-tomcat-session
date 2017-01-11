@@ -134,8 +134,21 @@ public class TestSpyMemcachedStore {
 
     }
 
+    @Test
+    public void testGetInfo() throws Exception {
+        SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1", null);
+        assertEquals(store.getClass().getSimpleName()+"/1.0", store.getInfo());
+
+    }
+
+    @Test
+    public void testKeys() throws Exception {
+        SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1", null);
+        assertEquals(0, store.keys().length);
+    }
     private class TestIFCacheClient implements IFCacheClient {
 
+        public String getDriverName() {return "TestIFCacheClient";}
         public String getUriScheme() {
             return "memcached";
         }

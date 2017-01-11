@@ -16,56 +16,27 @@
  */
 package utils.tomcat.unittest;
 
-import java.beans.PropertyChangeListener;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.management.ObjectName;
-import javax.naming.directory.DirContext;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.descriptor.JspConfigDescriptor;
-
-import org.apache.catalina.AccessLog;
-import org.apache.catalina.Authenticator;
-import org.apache.catalina.Cluster;
-import org.apache.catalina.Container;
-import org.apache.catalina.ContainerListener;
-import org.apache.catalina.Context;
-import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleListener;
-import org.apache.catalina.LifecycleState;
-import org.apache.catalina.Loader;
-import org.apache.catalina.Manager;
-import org.apache.catalina.Pipeline;
-import org.apache.catalina.Realm;
-import org.apache.catalina.Wrapper;
+import org.apache.catalina.*;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.core.ApplicationServletRegistration;
 import org.apache.catalina.core.StandardPipeline;
-import org.apache.catalina.deploy.ApplicationListener;
-import org.apache.catalina.deploy.ApplicationParameter;
-import org.apache.catalina.deploy.ErrorPage;
-import org.apache.catalina.deploy.FilterDef;
-import org.apache.catalina.deploy.FilterMap;
-import org.apache.catalina.deploy.LoginConfig;
-import org.apache.catalina.deploy.NamingResources;
-import org.apache.catalina.deploy.SecurityConstraint;
+import org.apache.catalina.deploy.*;
 import org.apache.catalina.util.CharsetMapper;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.JarScanner;
 import org.apache.tomcat.util.http.mapper.Mapper;
+
+import javax.management.ObjectName;
+import javax.naming.directory.DirContext;
+import javax.servlet.*;
+import javax.servlet.descriptor.JspConfigDescriptor;
+import java.beans.PropertyChangeListener;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
 
 /**
  * Minimal implementation for use in unit tests.
@@ -656,11 +627,13 @@ public class TesterContext implements Context {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean getTldNamespaceAware() {
         return true;
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void setTldNamespaceAware(boolean tldNamespaceAware) {
         // NO-OP
     }
@@ -691,6 +664,7 @@ public class TesterContext implements Context {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void addApplicationListener(ApplicationListener listener) {
         // NO-OP
     }

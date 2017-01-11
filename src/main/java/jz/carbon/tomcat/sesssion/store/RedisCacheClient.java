@@ -11,7 +11,7 @@ import java.net.URI;
  */
 public class RedisCacheClient extends AbstractCacheClient {
     private static final Log log = LogFactory.getLog(RedisCacheClient.class);
-
+    public static final int DEFAULT_PORT = 6379;
     public RedisCacheClient() {
         super(null);
     }
@@ -43,6 +43,6 @@ public class RedisCacheClient extends AbstractCacheClient {
     }
 
     public int getDefaultPort() {
-        return 6379;
+        return DEFAULT_PORT;
     }
 }

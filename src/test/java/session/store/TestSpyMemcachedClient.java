@@ -25,6 +25,12 @@ public class TestSpyMemcachedClient {
         SpyMemcachedNode.setMemcachedClientClass(MockMemcachedClient.class);
     }
 
+    @Test
+    public void testGetDefaultPort() throws Exception {
+        SpyMemcachedClient client = new SpyMemcachedClient();
+        assertEquals(SpyMemcachedClient.DEFAULT_PORT, client.getDefaultPort());
+    }
+
     private SpyMemcachedNode getNodeWithClient(String host, int port) throws Exception {
         SpyMemcachedNode node = new SpyMemcachedNode(new URI("memcached://" + host + ":" + port));
         return node;

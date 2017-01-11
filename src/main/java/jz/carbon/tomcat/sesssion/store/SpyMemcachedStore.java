@@ -26,7 +26,7 @@ public class SpyMemcachedStore extends AbstractCacheStore {
     }
 
     public String getStoreName() {
-        return SpyMemcachedStore.class.getSimpleName();
+        return getClass().getSimpleName();
     }
 
     @Override

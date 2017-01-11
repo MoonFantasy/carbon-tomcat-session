@@ -11,7 +11,7 @@ import java.net.URI;
 public class SpyMemcachedClient extends AbstractCacheClient {
 
     private static final Log log = LogFactory.getLog(SpyMemcachedClient.class);
-
+    public static final int DEFAULT_PORT = 11211;
 
     public SpyMemcachedClient() {
         super(null);
@@ -39,7 +39,7 @@ public class SpyMemcachedClient extends AbstractCacheClient {
     }
 
     public int getDefaultPort() {
-        return 11211;
+        return DEFAULT_PORT;
     }
 
 }
