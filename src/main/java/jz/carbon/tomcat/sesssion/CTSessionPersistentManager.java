@@ -1,10 +1,14 @@
 package jz.carbon.tomcat.sesssion;
 
-import org.apache.catalina.*;
+import org.apache.catalina.LifecycleException;
+import org.apache.catalina.Session;
+import org.apache.catalina.SessionIdGenerator;
+import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.session.StandardSession;
 import org.apache.catalina.util.SessionIdGeneratorBase;
+import org.apache.catalina.util.StandardSessionIdGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.webapp.mgt.CarbonTomcatSessionPersistentManager;
@@ -12,7 +16,6 @@ import org.wso2.carbon.webapp.mgt.CarbonTomcatSessionPersistentManager;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -31,6 +34,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     protected ThreadLocal<Boolean> currentSessionIsPersisted = new ThreadLocal<Boolean>();
     protected ThreadLocal<Boolean> currentIgnore = new ThreadLocal<Boolean>();
     protected CTSessionHandlerValve handlerValve;
+
     static {
         try {
             Field fd = CarbonTomcatSessionPersistentManager.class.getDeclaredField("allowedClasses");
@@ -39,33 +43,13 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
             List<String> allowedClasses = (List<String>) fd.get(ArrayList.class);
             allowedClasses.add(CTSessionPersistentManager.class.getName());
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.fatal(e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
-    public void setRequestUriIgnorePattern(String ignoreSavePattern) {
-        this.requestUriIgnorePattern = ignoreSavePattern;
-    }
-    public void setSessionIdGeneratorClassName(String className) throws Exception {
-        Class<?> sessionIdGeneratorClasss = null;
-        try {
-            sessionIdGeneratorClasss = Class.forName(className, false, getContainer().getLoader().getClassLoader()).asSubclass(SessionIdGeneratorBase.class);
-        } catch (Exception e) {
-            log.warn("Could not load memcached class '" + className + "' " + e.getCause());
-            try {
-                sessionIdGeneratorClasss = Class.forName(className, false, getClass().getClassLoader()).asSubclass(SessionIdGeneratorBase.class);
-            } catch (ClassNotFoundException execp) {
-                log.error("Still could not load memcached class '" + className + "' " + execp.getCause());
-                throw execp;
-            }
-        }
-        if (!Arrays.asList(sessionIdGeneratorClasss.getSuperclass()).contains(SessionIdGeneratorBase.class)) {
-            log.error("Class '" + sessionIdGeneratorClasss.getName() + "' is not SessionIdGeneratorBase sub class");
-        } else {
-            this.sessionIdGeneratorClass = (Class<? extends SessionIdGenerator>) sessionIdGeneratorClasss;
-        }
-    }
+
+
     public CTSessionPersistentManager(int owenTenantId) {
         super(owenTenantId);
     }
@@ -73,8 +57,70 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     public CTSessionPersistentManager() {
     }
 
+    public void setRequestUriIgnorePattern(String ignoreSavePattern) {
+        this.requestUriIgnorePattern = ignoreSavePattern;
+    }
+
+    private boolean isSessionIdGeneratorBaseSubClass(Class subclass) {
+        if (subclass == null)
+            return false;
+        if (subclass.getName().compareTo(SessionIdGeneratorBase.class.getName()) == 0)
+            return true;
+        return isSessionIdGeneratorBaseSubClass(subclass.getSuperclass());
+    }
+
+    public void setSessionIdGeneratorClassName(String className) throws Exception {
+        Class<?> sessionIdGeneratorClasss = null;
+        try {
+            sessionIdGeneratorClasss = Class.forName(className, false, getClass().getClassLoader());
+            if (!isSessionIdGeneratorBaseSubClass(sessionIdGeneratorClasss)) {
+                log.error("Class '" + sessionIdGeneratorClasss.getName() + "' is not SessionIdGeneratorBase sub class");
+            } else {
+                this.sessionIdGeneratorClass = (Class<? extends SessionIdGenerator>) sessionIdGeneratorClasss;
+                this.sessionIdGenerator = null;
+            }
+        } catch (ClassNotFoundException execp) {
+            log.error("Could not load session id generator class '" + className + "' " + execp.getMessage());
+        } finally {
+            if (this.sessionIdGeneratorClass == null)
+                this.sessionIdGeneratorClass = StandardSessionIdGenerator.class;
+        }
+    }
+
+    /**
+     * Assume session id will not duplicate
+     * make sure session id length is enough
+     * @return
+     */
+    @Override
+    protected String generateSessionId() {
+        String result = null;
+        result = getSessionIdGenerator().generateSessionId();
+        return result;
+    }
+
+    @Override
+    public SessionIdGenerator getSessionIdGenerator() {
+        if (sessionIdGenerator != null) {
+            return sessionIdGenerator;
+        } else if (sessionIdGeneratorClass != null) {
+            try {
+                sessionIdGenerator = sessionIdGeneratorClass.newInstance();
+                return sessionIdGenerator;
+            } catch(Exception ex) {
+                log.error("Create new session id generator instance fail ", ex);
+                sessionIdGenerator = new StandardSessionIdGenerator();
+            } finally {
+                if (sessionIdLength != SESSION_ID_LENGTH_UNSET)
+                    sessionIdGenerator.setSessionIdLength(sessionIdLength);
+                sessionIdGenerator.setJvmRoute(getJvmRoute());
+            }
+        }
+        return sessionIdGenerator;
+    }
+
     public void addBackgroundWork(Callable<Void> work) {
-        synchronized(backgroundWorks) {
+        synchronized (backgroundWorks) {
             backgroundWorks.add(work);
         }
     }
@@ -85,11 +131,11 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
     public String getInfo() {
-        return "CTSessionPersistentManager/1.0";
+        return getName() + "/1.0";
     }
 
     public String getName() {
-        return "CTSessionPersistentManager";
+        return getClass().getSimpleName();
     }
 
     public void backgroundProcess() {
@@ -97,7 +143,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
             try {
                 work.call();
             } catch (Exception e) {
-                log.error("Invoke work fail " + e.getMessage() + " " + e.getCause());
+                log.error("Invoke Work fail " + e.getMessage() + " " + e.getCause());
             }
         }
         super.backgroundProcess();
@@ -146,7 +192,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
         try {
             writeSession(session);
         } catch (IOException e) {
-            log.error("add write session fail ", e);
+            log.error("Adding session fail", e);
         }
     }
 
@@ -156,13 +202,7 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
         if (session != null) {
             currentSession.set(session);
             currentSessionId.set(sessionId);
-            try {
-                writeSession(session);
-                currentSessionIsPersisted.set(true);
-            } catch (IOException e) {
-                log.error("createSession write session fail ", e);
-                currentSessionIsPersisted.set(false);
-            }
+            currentSessionIsPersisted.set(false);
         }
         return session;
     }
@@ -192,14 +232,10 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
     protected Session swapIn(String id) throws IOException {
-        if (isIgnoreRequest())
-            return null;
         return super.swapIn(id);
     }
 
     protected void writeSession(Session session) throws IOException {
-        if (isIgnoreRequest())
-            return;
         super.writeSession(session);
     }
 

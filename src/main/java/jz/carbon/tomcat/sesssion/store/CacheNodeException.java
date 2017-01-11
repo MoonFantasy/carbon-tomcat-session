@@ -7,4 +7,8 @@ public class CacheNodeException extends Exception {
     public CacheNodeException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public CacheNodeException(Throwable cause) {
+        super(cause);
+    }
 }

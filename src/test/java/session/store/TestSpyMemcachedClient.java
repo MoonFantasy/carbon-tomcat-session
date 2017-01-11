@@ -1,5 +1,6 @@
 package session.store;
 
+import jz.carbon.tomcat.sesssion.store.CacheClientIOException;
 import jz.carbon.tomcat.sesssion.store.SpyMemcachedClient;
 import jz.carbon.tomcat.sesssion.store.SpyMemcachedNode;
 import mock.net.spy.memcached.MockMemcachedClient;
@@ -23,10 +24,19 @@ public class TestSpyMemcachedClient {
     public void setUp() throws Exception {
         SpyMemcachedNode.setMemcachedClientClass(MockMemcachedClient.class);
     }
-    private SpyMemcachedNode getNodeWithClient(String host, int port){
-        SpyMemcachedNode node = new SpyMemcachedNode(host, port);
+
+    @Test
+    public void testGetDefaultPort() throws Exception {
+        SpyMemcachedClient client = new SpyMemcachedClient();
+        assertEquals(SpyMemcachedClient.DEFAULT_PORT, client.getDefaultPort());
+    }
+
+    private SpyMemcachedNode getNodeWithClient(String host, int port) throws Exception {
+        SpyMemcachedNode node = new SpyMemcachedNode(new URI("memcached://" + host + ":" + port));
         return node;
     }
+
+
     @Test
     public void testSetAndGet() throws Exception {
         SpyMemcachedClient client = new SpyMemcachedClient();
@@ -71,7 +81,6 @@ public class TestSpyMemcachedClient {
             assertNotNull(client.getAndTouch(Integer.toString(i), 100));
         }
     }
-
 
 
     @Test
@@ -175,7 +184,7 @@ public class TestSpyMemcachedClient {
 
     }
 
-    @Test
+    @Test(expected = CacheClientIOException.class)
     public void testSetNoAvailableNode() throws Exception {
         SpyMemcachedClient client = new SpyMemcachedClient();
         client.addNode(getNodeWithClient("127.0.0.1", 1));
@@ -217,6 +226,5 @@ public class TestSpyMemcachedClient {
         }
 
     }
-
 
 }

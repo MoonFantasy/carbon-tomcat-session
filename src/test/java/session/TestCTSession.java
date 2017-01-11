@@ -16,22 +16,19 @@
  */
 package session;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import jz.carbon.tomcat.sesssion.CTSession;
+import jz.carbon.tomcat.sesssion.CTSessionPersistentManager;
+import org.apache.catalina.Manager;
+import org.apache.catalina.core.StandardContext;
+import org.junit.Test;
+
+import java.io.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import jz.carbon.tomcat.sesssion.CTSession;
-import jz.carbon.tomcat.sesssion.CTSessionPersistentManager;
-import org.junit.Assert;
-import org.junit.Test;
-
-import org.apache.catalina.Manager;
-import org.apache.catalina.core.StandardContext;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TestCTSession {
 
@@ -42,6 +39,11 @@ public class TestCTSession {
         TEST_MANAGER.setContainer(new StandardContext());
     }
 
+    @Test
+    public void testGetInfo() throws Exception {
+        CTSession session = new CTSession(TEST_MANAGER);
+        assertEquals(CTSession.class.getSimpleName()+"/1.0", session.getInfo());
+    }
 
     @Test
     public void testSerializationEmpty() throws Exception {
@@ -114,9 +116,9 @@ public class TestCTSession {
 
         CTSession s2 = serializeThenDeserialize(s1);
 
-        Assert.assertNull(s2.getAttribute(nestedNonSerializableKey));
-        Assert.assertNull(s2.getAttribute(nonSerializableKey));
-        Assert.assertEquals(serializableValue, s2.getAttribute(serializableKey));
+        assertNull(s2.getAttribute(nestedNonSerializableKey));
+        assertNull(s2.getAttribute(nonSerializableKey));
+        assertEquals(serializableValue, s2.getAttribute(serializableKey));
     }
 
 
@@ -124,6 +126,7 @@ public class TestCTSession {
             throws IOException, ClassNotFoundException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
+
         source.writeObjectData(oos);
 
         CTSession dest = new CTSession(TEST_MANAGER);
@@ -144,10 +147,10 @@ public class TestCTSession {
             Object v1 = s1.getAttribute(name);
             Object v2 = s2.getAttribute(name);
 
-            Assert.assertEquals(v1,  v2);
+            assertEquals(v1,  v2);
         }
 
-        Assert.assertEquals(expectedCount, count);
+        assertEquals(expectedCount, count);
     }
 
 

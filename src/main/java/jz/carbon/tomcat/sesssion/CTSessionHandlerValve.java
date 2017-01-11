@@ -18,13 +18,16 @@ public class CTSessionHandlerValve extends ValveBase {
     private static final Log log = LogFactory.getLog(CTSessionHandlerValve.class);
     protected CTSessionPersistentManager manager = null;
     protected String requestUriIgnorePattern = null;
+
     public void setCTSessionPersistentManager(CTSessionPersistentManager manager) {
         this.manager = manager;
 
     }
+
     public void setSequestUriIgnorePattern(String pattern) {
         this.requestUriIgnorePattern = pattern;
     }
+
     public CTSessionPersistentManager getCTSessionPersistentManager() {
         return manager;
     }
@@ -33,13 +36,18 @@ public class CTSessionHandlerValve extends ValveBase {
         try {
             if (manager != null) {
                 if (requestUriIgnorePattern != null && requestUriIgnorePattern.length() > 0) {
+                    boolean isMatch = false;
                     try {
                         Pattern pattern = Pattern.compile(requestUriIgnorePattern, Pattern.CASE_INSENSITIVE);
                         Matcher matcher = pattern.matcher(request.getRequestURI());
                         if (matcher.find())
-                            manager.setCurrentIgnore(true);
+                            isMatch = true;
                     } catch (IllegalArgumentException e) {
                         log.warn("Wrong requestUriIgnorePattern format ", e);
+                    } catch (Exception e) {
+                        log.warn(e);
+                    } finally {
+                        manager.setCurrentIgnore(isMatch);
                     }
                 }
             }

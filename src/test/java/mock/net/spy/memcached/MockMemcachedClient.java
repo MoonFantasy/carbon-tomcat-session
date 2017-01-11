@@ -1,16 +1,13 @@
 package mock.net.spy.memcached;
 
-//import javafx.util.Pair;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import net.spy.memcached.*;
 import net.spy.memcached.internal.BulkFuture;
 import net.spy.memcached.internal.OperationFuture;
 import net.spy.memcached.transcoders.Transcoder;
-import org.junit.runners.ParentRunner;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
-import java.io.ObjectInput;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.UnresolvedAddressException;
@@ -27,7 +24,7 @@ public class MockMemcachedClient implements MemcachedClientIF {
         return new MockMemcachedClient(null, addrs);
     }
     private int sw = 0;
-    private HashMap<String, Pair<Object, Long>> mockMemcached = new HashMap<String, Pair<Object, Long>>();
+    private ConcurrentHashMap<String, MutablePair<Object, Long>> mockMemcached = new ConcurrentHashMap<String, MutablePair<Object, Long>>();
     public void setSw(int sw) {
         this.sw = sw;
     }

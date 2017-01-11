@@ -13,9 +13,8 @@ import utils.tomcat.unittest.TesterContext;
 import utils.tomcat.unittest.TesterHost;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -29,10 +28,16 @@ public class TestSpyMemcachedStore {
         SpyMemcachedNode.setMemcachedClientClass(MockMemcachedClient.class);
     }
 
-    private SpyMemcachedStore getSpyMemcachedStore(String nodes, String mcClientClassName) {
+    private SpyMemcachedStore getSpyMemcachedStore(String nodes, Class mcClientClass) {
         SpyMemcachedStore memcachedStore = new SpyMemcachedStore();
-        if (mcClientClassName != null && mcClientClassName.trim().length() != 0) {
-            memcachedStore.setMemcachedClassName(mcClientClassName);
+        IFCacheClient client = null;
+        if (mcClientClass != null) {
+            try {
+                mcClientClass.newInstance();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            memcachedStore.setCacheClient(client);
         }
 
         if (nodes != null)
@@ -58,55 +63,35 @@ public class TestSpyMemcachedStore {
         return manager;
     }
 
-    @Test
-    public void testSetMemcachedClassName() throws Exception {
-        SpyMemcachedStore store = getSpyMemcachedStore(null, null);
-        Field fd = store.getClass().getDeclaredField("memcachedClass");
-        fd.setAccessible(true);
-
-        assertEquals("jz.carbon.tomcat.sesssion.store.SpyMemcachedClient",
-                ((Class)fd.get(store)).getName());
-
-        store.setMemcachedClassName(Object.class.getName());
-
-        assertEquals("jz.carbon.tomcat.sesssion.store.SpyMemcachedClient",
-                ((Class)fd.get(store)).getName());
-
-        store.setMemcachedClassName(TestISpyMcClient.class.getName());
-
-        assertEquals(TestISpyMcClient.class.getName(),
-                ((Class)fd.get(store)).getName());
-    }
 
     @Test
     public void testGetMemcachedClient() throws Exception {
         SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1:11211, 127.0.0.1:11212", null);
-        assertTrue(store.getMemcachedClient() instanceof SpyMemcachedClient);
+        assertTrue(store.getCacheClient() instanceof SpyMemcachedClient);
     }
 
     @Test
     public void testGetMaxInactiveInterval() throws Exception {
         SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1:11211, 127.0.0.1:11212", null);
-        assertEquals(store.DEFAULT_MAX_INACTIVE_INTERVAL, store.getMaxInactiveInterval());
+        assertEquals(AbstractCacheStore.DEFAULT_MAX_INACTIVE_INTERVAL, store.getMaxInactiveInterval());
         CTSessionPersistentManager manager = new CTSessionPersistentManager(-1234);
         manager.setStore(store);
         assertEquals(manager.getMaxInactiveInterval(), store.getMaxInactiveInterval());
     }
 
     @Test
-    public void testSetNode() throws Exception {
+    public void testSetNodes() throws Exception {
         SpyMemcachedStore store = getSpyMemcachedStore(null, null);
-        store.setNodes("127.0.0.1:11211, memcached://127.0.0.1:11212, nono:nono, 127.0.0.1:abc, abc. ,memcached://");
-        Field fd = store.getClass().getDeclaredField("nodes");
-        fd.setAccessible(true);
-        assertEquals(2,((ArrayList<String>)fd.get(store)).size());
+        store.setNodes("122.0.0.1, localhost, 127.0.0.1:11211, abc://localhost, memcached://localhost:11211");
+        assertEquals(4, store.getNodeSize());
     }
+
     @Test
     public void testClear() throws Exception {
         SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1:11211, 127.0.0.1:11212", null);
         store.clear();
         store = getSpyMemcachedStore("127.0.0.1:11211, 127.0.0.1:11212", null);
-        store.setMemcachedClassName(TestISpyMcClient.class.getName());
+//        store.setCacheClientClassName(TestIFCacheClient.class.getName());
         store.clear();
     }
 
@@ -117,9 +102,9 @@ public class TestSpyMemcachedStore {
         SpyMemcachedStore store = getSpyMemcachedStore(nodes, null);
         CTSessionPersistentManager manager = getManager(store);
 
-        CTSession session1 = (CTSession)manager.createSession(null);
-        CTSession session2 = (CTSession)manager.createSession(null);
-        CTSession session3 = (CTSession)manager.createSession(null);
+        CTSession session1 = (CTSession) manager.createSession(null);
+        CTSession session2 = (CTSession) manager.createSession(null);
+        CTSession session3 = (CTSession) manager.createSession(null);
         //assertEquals( 0, store.getSize());
         store.save(session1);
         store.save(session2);
@@ -140,43 +125,100 @@ public class TestSpyMemcachedStore {
 
         String nodes = "127.0.0.1:11211, 127.0.0.1:11212, memcached://127.0.0.1:1, memcached://127.0.0.1:2, memcached://127.0.0.1:3, memcached://127.0.0.1:4, memcached://127.0.0.1:5";
         SpyMemcachedStore store = getSpyMemcachedStore(nodes, null);
-        store.setMemcachedClassName(TestISpyMcClient.class.getName());
+        store.setCacheClient(new TestIFCacheClient());
         CTSessionPersistentManager manager = getManager(store);
 
-        CTSession session1 = (CTSession)manager.createSession(null);
-        CTSession session2 = (CTSession)manager.createSession(null);
-        CTSession session3 = (CTSession)manager.createSession(null);
-        //assertEquals(0, store.getSize());
+        CTSession session1 = (CTSession) manager.createSession(null);
 
         store.save(session1);
-        store.save(session2);
-        store.save(session3);
-
-        assertEquals(session1.getId(), store.load(session1.getId()).getId());
-        store.remove(session1.getId());
-        assertNull(store.load(session1.getId()));
-        assertEquals(session2.getId(), store.load(session2.getId()).getId());
-        store.clear();
-        assertNull(store.load(session2.getId()));
-
 
     }
 
-    private class TestISpyMcClient implements ICacheClient {
-        public TestISpyMcClient() throws Exception {
-            throw new Exception("for test");
+    @Test
+    public void testGetInfo() throws Exception {
+        SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1", null);
+        assertEquals(store.getClass().getSimpleName()+"/1.0", store.getInfo());
+
+    }
+
+    @Test
+    public void testKeys() throws Exception {
+        SpyMemcachedStore store = getSpyMemcachedStore("127.0.0.1", null);
+        assertEquals(0, store.keys().length);
+    }
+    private class TestIFCacheClient implements IFCacheClient {
+
+        public String getDriverName() {return "TestIFCacheClient";}
+        public String getUriScheme() {
+            return "memcached";
         }
-        public void addNode(URI uri) {}
-        public void addNode(ICacheNode node) {}
-        public byte[] get(String key) {return null;}
-        public byte[] getAndTouch(String key, int expiration) {return null;}
-        public boolean set(String key, byte[] value, int expiration) {return false;}
-        public boolean delete(String key) {return false;}
-        public int getSize() {return 0;}
-        public void clean() {}
-        public void backgroundWork() {}
+
+        public String getUriSslScheme() {
+            return "memcached";
+        }
+
+        public void removeAllNode() {
+
+        }
+
+        public void addNode(URI uri) {
+        }
+
+        public void addNode(IFCacheNode node) {
+        }
+
+        public int getNodeSize() {
+            return 0;
+        }
+
+        public byte[] get(String key) throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public byte[] getAndTouch(String key, int expiration) throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public boolean set(String key, byte[] value, int expiration) throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public boolean delete(String key) throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public int getSize() throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public void clean() throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public void backgroundWork() {
+
+        }
+
+        public List<String> getKeys() throws CacheClientIOException {
+            throw new CacheClientIOException("TestIFCacheClient throws");
+        }
+
+        public AbstractCacheStore getStore() {
+            return null;
+        }
+
+        public void setStore(AbstractCacheStore store) {
+        }
+
+        public void setKeyPrefix(String keyPrefix) {
+        }
+
+        public TestIFCacheClient() throws Exception {
+
+        }
+
+        public int getDefaultPort() {
+            return 0;
+        }
     }
-
-
-
 }
