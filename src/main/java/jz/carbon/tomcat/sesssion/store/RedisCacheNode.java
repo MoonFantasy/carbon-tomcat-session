@@ -239,6 +239,10 @@ public class RedisCacheNode implements IFCacheNode {
         return result;
     }
 
+    public String toString() {
+        return getClass().getSimpleName() + "[" + uri.getHost() + ":" + uri.getPort() + "]";
+    }
+
     public void close() {
         if (jedisPool != null) {
             jedisPool.close();

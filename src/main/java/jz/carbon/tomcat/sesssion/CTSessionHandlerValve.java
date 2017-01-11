@@ -40,8 +40,10 @@ public class CTSessionHandlerValve extends ValveBase {
                     try {
                         Pattern pattern = Pattern.compile(requestUriIgnorePattern, Pattern.CASE_INSENSITIVE);
                         Matcher matcher = pattern.matcher(request.getRequestURI());
-                        if (matcher.find())
+                        if (matcher.find()) {
                             isMatch = true;
+                            log.debug("Ignore Request " + request.getRequestURI());
+                        }
                     } catch (IllegalArgumentException e) {
                         log.warn("Wrong requestUriIgnorePattern format ", e);
                     } catch (Exception e) {

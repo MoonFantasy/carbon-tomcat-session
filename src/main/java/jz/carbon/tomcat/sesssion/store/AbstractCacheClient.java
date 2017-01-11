@@ -64,7 +64,7 @@ abstract public class AbstractCacheClient implements IFCacheClient {
 
     public void suspendNode(int index) {
         synchronized (suspendedNodeIndex) {
-            log.warn("Suspending Node : " + index);
+            log.warn("Suspending Node : " + index + " " + getNode(index).toString());
             long timestamp = System.currentTimeMillis() / 1000;
             suspendedNodeIndex.put(index, timestamp);
         }
@@ -79,7 +79,7 @@ abstract public class AbstractCacheClient implements IFCacheClient {
 
     public void resumeNode(int index) {
         synchronized (suspendedNodeIndex) {
-            log.warn("Resuming Node : " + index);
+            log.warn("Resuming Node : " + index + " " + getNode(index).toString());
             suspendedNodeIndex.remove(index);
         }
     }
@@ -116,6 +116,7 @@ abstract public class AbstractCacheClient implements IFCacheClient {
             String key = "___TestAlive___";
             String value = "alive";
             for (int index : suspendedNodeIndex.keySet()) {
+                log.debug("Check node " + index + " ...");
                 try {
                     getNode(index).set(key, value.getBytes(), 10);
                 } catch (Exception e) {
@@ -279,7 +280,7 @@ abstract public class AbstractCacheClient implements IFCacheClient {
     }
 
     public void setKeyPrefix(String keyPrefix) {
-        this.keyPrefix =  keyPrefix;
+        this.keyPrefix = keyPrefix;
     }
 
     public void removeAllNode() {

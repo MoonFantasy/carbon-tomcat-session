@@ -96,9 +96,12 @@ public class TestCTSession {
     }
 
 
-    /*
-     * See Bug 58284
-     */
+    @Test
+    public void testToString() {
+        CTSession s1 = new CTSession(TEST_MANAGER);
+        assertEquals(s1.getClass().getSimpleName() + "[" + s1.getId()+"]", s1.toString());
+    }
+
     @Test
     public void serializeSkipsNonSerializableAttributes() throws Exception {
         final String nonSerializableKey = "nonSerializable";
@@ -152,6 +155,7 @@ public class TestCTSession {
 
         assertEquals(expectedCount, count);
     }
+
 
 
     private static class NonSerializable {

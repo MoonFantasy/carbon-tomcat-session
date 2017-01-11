@@ -51,7 +51,7 @@ public class SpyMemcachedNode implements IFCacheNode {
     public MemcachedClientIF getNewMemcachedClient() throws IOException {
         ArrayList<InetSocketAddress> addrs = new ArrayList<InetSocketAddress>();
         addrs.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
-        MemcachedClientIF  memcachedClient = null;
+        MemcachedClientIF memcachedClient = null;
         try {
             memcachedClient = (MemcachedClientIF) memcachedClientClass
                     .getConstructor(ConnectionFactory.class, List.class)
@@ -133,7 +133,7 @@ public class SpyMemcachedNode implements IFCacheNode {
         try {
             future = client.set(key, expiration, data);
             boolean result = future.get(timeout, TimeUnit.MILLISECONDS);
-            log.debug("Set "+ key + " data length :"+ data.length);
+            log.debug("Set " + key + " data length :" + data.length);
             return result;
         } catch (CancellationException e) {
             log.error("Cancellation " + e.getCause());
@@ -204,8 +204,13 @@ public class SpyMemcachedNode implements IFCacheNode {
         }
         return result;
     }
+
     public List<String> getKeys(String prefix) throws CacheNodeException {
         return new ArrayList<String>();
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[" + uri.getHost() + ":" + uri.getPort() + "]";
     }
 
     public void close() {

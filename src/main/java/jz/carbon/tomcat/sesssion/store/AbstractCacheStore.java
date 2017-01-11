@@ -195,7 +195,7 @@ abstract public class AbstractCacheStore extends StoreBase {
                 return null;
             IFCacheClient cachedClient = getCacheClient();
             if (cachedClient != null) {
-                log.debug("Start store background works " + now);
+                log.trace("Start store background works Timestamp:" + now + " ThreadId:" + Thread.currentThread().getId());
                 cachedClient.backgroundWork();
             }
             lastRunTimeStemp = System.currentTimeMillis() / 1000;
