@@ -18,14 +18,23 @@ public class CTSessionHandlerValve extends ValveBase {
     private static final Log log = LogFactory.getLog(CTSessionHandlerValve.class);
     protected CTSessionPersistentManager manager = null;
     protected String requestUriIgnorePattern = ".*\\.(ico|png|gif|jpg|css|js)$";
+    protected String requestIgnoreExcludePattern = "csrfPrevention";
+    protected String requestMethodIgnoreExcludePattern = "POST";
 
     public void setCTSessionPersistentManager(CTSessionPersistentManager manager) {
         this.manager = manager;
-
     }
 
     public void setRequestUriIgnorePattern(String pattern) {
         this.requestUriIgnorePattern = pattern;
+    }
+
+    public void setRequestIgnoreExcludePattern(String pattern) {
+        this.requestIgnoreExcludePattern = pattern;
+    }
+
+    public void setRequestMethodIgnoreExcludePattern(String pattern) {
+        this.requestMethodIgnoreExcludePattern = pattern;
     }
 
     public CTSessionPersistentManager getCTSessionPersistentManager() {
@@ -36,24 +45,40 @@ public class CTSessionHandlerValve extends ValveBase {
         try {
             if (manager != null) {
                 if (requestUriIgnorePattern != null && requestUriIgnorePattern.length() > 0) {
-                    boolean isMatch = false;
+                    boolean isIgnore = false;
                     try {
                         Pattern pattern = Pattern.compile(requestUriIgnorePattern, Pattern.CASE_INSENSITIVE);
                         Matcher matcher = pattern.matcher(request.getRequestURI());
-                        if (matcher.find()) {
-                            isMatch = true;
-                            log.debug("Ignore Request " + request.getRequestURI() + " thread id: " + Thread.currentThread().getId());
+                        if (matcher.find())
+                            isIgnore = true;
+
+                        if (isIgnore && requestIgnoreExcludePattern != null && requestIgnoreExcludePattern.length() > 0) {
+                            Pattern ignoreExcludePattern = Pattern.compile(requestIgnoreExcludePattern, Pattern.CASE_INSENSITIVE);
+                            Matcher ignoreExcludeMatcher = ignoreExcludePattern.matcher(request.getRequestURI());
+                            if (ignoreExcludeMatcher.find())
+                                isIgnore = false;
                         }
+
+                        if (isIgnore && requestMethodIgnoreExcludePattern != null && requestMethodIgnoreExcludePattern.length() > 0) {
+                            Pattern methodIgnoreExcludePattern = Pattern.compile(requestMethodIgnoreExcludePattern, Pattern.CASE_INSENSITIVE);
+                            Matcher methodIgnoreExcludeMatcher = methodIgnoreExcludePattern.matcher(request.getMethod());
+                            if (methodIgnoreExcludeMatcher.find())
+                                isIgnore = false;
+                        }
+
                     } catch (IllegalArgumentException e) {
-                        log.warn("Wrong requestUriIgnorePattern format ", e);
+                        log.warn("Wrong pattern format ", e);
                     } catch (Exception e) {
                         log.warn(e);
                     } finally {
-                        manager.setCurrentIgnore(isMatch);
+                        if (isIgnore && log.isDebugEnabled())
+                            log.debug("Ignore Session Request " + request.getRequestURI() + " thread id: " + Thread.currentThread().getId());
+                        manager.setCurrentIgnore(isIgnore);
                     }
                 }
             }
-            getNext().invoke(request, response);
+            if(getNext() != null)
+                getNext().invoke(request, response);
         } finally {
             if (manager != null) {
                 manager.afterRequest(request, response);

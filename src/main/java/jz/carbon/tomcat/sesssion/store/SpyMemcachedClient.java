@@ -1,8 +1,5 @@
 package jz.carbon.tomcat.sesssion.store;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.net.URI;
 
 /**
@@ -10,7 +7,6 @@ import java.net.URI;
  */
 public class SpyMemcachedClient extends AbstractCacheClient {
 
-    private static final Log log = LogFactory.getLog(SpyMemcachedClient.class);
     public static final int DEFAULT_PORT = 11211;
 
     public SpyMemcachedClient() {

@@ -18,4 +18,23 @@ Then drop ```carbon-tomcat-session-dep-<version>.jar``` into ```<CARBON_HOME>/re
     </Manager>
 ```
 
+## Ignore session valve configuration
 
+edit   ```<CARBON_HOME>/repository/conf/tomcat/catalina-server.xml```
+
+Add ```<Valve className="jz.carbon.tomcat.sesssion.CTSessionHandlerValve"/>``` to ```<Host>``` at fist Valve
+
+
+for example
+``` xml
+<Host name="localhost" unpackWARs="true" deployOnStartup="false" autoDeploy="false"
+             appBase="${carbon.home}/repository/deployment/server/webapps/">
+        <Valve className="jz.carbon.tomcat.sesssion.CTSessionHandlerValve"/>
+        <Valve className="org.wso2.carbon.tomcat.ext.valves.CarbonContextCreatorValve"/>
+        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="${carbon.home}/repository/logs"
+                  prefix="http_access_" suffix=".log"
+                  pattern="combined"/>
+        <Valve className="org.wso2.carbon.tomcat.ext.valves.CarbonStuckThreadDetectionValve" threshold="600"/>
+        <Valve className="org.wso2.carbon.tomcat.ext.valves.CompositeValve"/>
+</Host>
+```

@@ -25,7 +25,6 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     private static final Log log = LogFactory.getLog(CTSessionPersistentManager.class);
     private List<Callable<Void>> backgroundWorks = new ArrayList<Callable<Void>>();
 
-    protected String requestUriIgnorePattern = ".*\\.(ico|png|gif|jpg|css|js)$";
     protected ThreadLocal<Session> currentSession = new ThreadLocal<Session>();
     protected ThreadLocal<String> currentSessionId = new ThreadLocal<String>();
     protected ThreadLocal<Boolean> currentSessionIsPersisted = new ThreadLocal<Boolean>();
@@ -52,10 +51,6 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
     public CTSessionPersistentManager() {
-    }
-
-    public void setRequestUriIgnorePattern(String ignoreSavePattern) {
-        this.requestUriIgnorePattern = ignoreSavePattern;
     }
 
     private boolean isSessionIdGeneratorBaseSubClass(Class subclass) {
@@ -236,10 +231,8 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
             session.setCreationTime(System.currentTimeMillis());
             session.setMaxInactiveInterval(((Context) getContainer()).getSessionTimeout() * 60);
             session.setId(id);
-            log.debug("ignore new session" + " thread id: " + Thread.currentThread().getId());
             return session;
         }
-        log.debug("not ignore new session" + " thread id: " + Thread.currentThread().getId());
         return super.swapIn(id);
     }
 
@@ -264,7 +257,8 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
             try {
                 if (!isIgnoreRequest()) {
                     writeSession(session);
-                    log.debug("After request Write session done " + " thread id: " + Thread.currentThread().getId());
+                    if (log.isDebugEnabled())
+                        log.debug("After request Write session done " + " thread id: " + Thread.currentThread().getId());
                 }
             } catch (IOException e) {
                 log.error("After Request write session fail " + " thread id: " + Thread.currentThread().getId(), e);
@@ -279,29 +273,18 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
 
     protected synchronized void startInternal() throws LifecycleException {
         super.startInternal();
-        boolean attachedToValve = false;
         currentIgnore.set(false);
         Pipeline pipeline = getContainer().getParent().getPipeline();
         Valve[] valves = pipeline.getValves();
         for (Valve valve : valves) {
             if (valve instanceof CTSessionHandlerValve) {
                 this.handlerValve = (CTSessionHandlerValve) valve;
-                this.handlerValve.setRequestUriIgnorePattern(requestUriIgnorePattern);
                 if (this.handlerValve.getCTSessionPersistentManager() == null) {
                     this.handlerValve.setCTSessionPersistentManager(this);
                     log.info("Attached to CTSessionHandlerValve after the request auto save session");
                 }
-                attachedToValve = true;
                 break;
             }
-        }
-        if (!attachedToValve) {
-            this.handlerValve = new CTSessionHandlerValve();
-            this.handlerValve.setRequestUriIgnorePattern(requestUriIgnorePattern);
-            this.handlerValve.setCTSessionPersistentManager(this);
-            pipeline.addValve(this.handlerValve);
-            log.info("Session Manager start internal attached to CTSessionHandlerValve  after the request auto save session");
-            getContainer().getPipeline().addValve(this.handlerValve);
         }
     }
 

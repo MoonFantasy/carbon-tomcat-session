@@ -1,14 +1,11 @@
 package jz.carbon.tomcat.sesssion.store;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * Created by jack on 2016/12/31.
  */
 public class RedisStore extends AbstractCacheStore {
-    private static final Log log = LogFactory.getLog(RedisStore.class);
     private int maxPool = 0;
+
     private int timeout = 0;
 
     public RedisStore() {

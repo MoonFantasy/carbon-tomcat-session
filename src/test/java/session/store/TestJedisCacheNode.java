@@ -326,4 +326,10 @@ public class TestJedisCacheNode {
         node.close();
         assertNull(poolField.get(node));
     }
+
+    @Test
+    public void testToString() throws Exception {
+        RedisCacheNode node = getRedisCacheNodeWithMock("redis://dummy:123", JedisPoolMock.NONE);
+        assertEquals(node.getClass().getSimpleName() + "[dummy:123]", node.toString());
+    }
 }

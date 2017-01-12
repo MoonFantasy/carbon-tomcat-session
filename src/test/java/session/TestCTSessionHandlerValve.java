@@ -29,22 +29,91 @@ public class TestCTSessionHandlerValve {
         Context context = new TesterContext();
         context.setParent(host);
         manager.setContainer(context);
-        manager.start();
         return manager;
+    }
+
+    @Test
+    public void testSetCTSessionPersistentManager() throws Exception {
+        CTSessionHandlerValve valve = new CTSessionHandlerValve();
+        CTSessionPersistentManager manager = getManager();
+        manager.getContainer().getParent().getPipeline().addValve(valve);
+        manager.getContainer().getParent().getPipeline().addValve(new DummyValve());
+
+        valve.invoke(new DummyRequest(null), null);
+        assertNull(valve.getCTSessionPersistentManager());
+        manager.start();
+
+        valve.setCTSessionPersistentManager(manager);
+        assertEquals(manager, valve.getCTSessionPersistentManager());
+
+    }
+
+    @Test
+    public void testPatternIllegal() throws Exception {
+        CTSessionHandlerValve valve = new CTSessionHandlerValve();
+        CTSessionPersistentManager manager = getManager();
+        manager.getContainer().getParent().getPipeline().addValve(valve);
+        manager.getContainer().getParent().getPipeline().addValve(new DummyValve());
+        valve.setRequestUriIgnorePattern("[abc");
+        manager.start();
+        valve.invoke(new DummyRequest("abc"), null);
+        assertFalse(manager.isIgnoreRequest());
+    }
+
+    @Test
+    public void testIgnoreExclude() throws Exception {
+        CTSessionHandlerValve valve = new CTSessionHandlerValve();
+        CTSessionPersistentManager manager = getManager();
+        manager.getContainer().getParent().getPipeline().addValve(valve);
+        manager.getContainer().getParent().getPipeline().addValve(new DummyValve());
+
+        manager.start();
+
+        valve.setRequestUriIgnorePattern("abc.*");
+
+        valve.invoke(new DummyRequest("abcdef"), null);
+        assertTrue(manager.isIgnoreRequest());
+
+        valve.setRequestIgnoreExcludePattern("def");
+
+        valve.invoke(new DummyRequest("abcdef"), null);
+        assertFalse(manager.isIgnoreRequest());
+
+    }
+
+    @Test
+    public void testMethodIgnoreExclude() throws Exception {
+        CTSessionHandlerValve valve = new CTSessionHandlerValve();
+        CTSessionPersistentManager manager = getManager();
+        manager.getContainer().getParent().getPipeline().addValve(valve);
+        manager.getContainer().getParent().getPipeline().addValve(new DummyValve());
+
+        manager.start();
+
+        valve.setRequestUriIgnorePattern("abc.*");
+
+        valve.invoke(new DummyRequest("abcdef"), null);
+        assertTrue(manager.isIgnoreRequest());
+
+        valve.setRequestMethodIgnoreExcludePattern("GET|POST");
+
+        valve.invoke(new DummyRequest("abcdef", "GET"), null);
+        assertFalse(manager.isIgnoreRequest());
+
+        valve.invoke(new DummyRequest("abcdef", "POST"), null);
+        assertFalse(manager.isIgnoreRequest());
+
     }
 
     @Test
     public void testInvoke() throws Exception {
         CTSessionHandlerValve valve = new CTSessionHandlerValve();
         CTSessionPersistentManager manager = getManager();
-        valve.setRequestUriIgnorePattern("abc");
-        valve.setNext(new DummyValve());
+        manager.getContainer().getParent().getPipeline().addValve(valve);
+        manager.getContainer().getParent().getPipeline().addValve(new DummyValve());
+        valve.setRequestUriIgnorePattern("abc.*");
 
-        valve.invoke(new DummyRequest(null), null);
-        assertNull(valve.getCTSessionPersistentManager());
-
-        valve.setCTSessionPersistentManager(manager);
-        assertEquals(manager, valve.getCTSessionPersistentManager());
+        manager.start();
 
         valve.invoke(new DummyRequest(null), null);
         assertFalse(manager.isIgnoreRequest());
@@ -58,7 +127,6 @@ public class TestCTSessionHandlerValve {
         valve.invoke(new DummyRequest("abc"), null);
         assertTrue(manager.isIgnoreRequest());
 
-        valve.setRequestUriIgnorePattern("[abc");
         valve.invoke(new DummyRequest("cba"), null);
         assertFalse(manager.isIgnoreRequest());
 

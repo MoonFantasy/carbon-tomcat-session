@@ -23,9 +23,7 @@ import org.apache.catalina.core.StandardContext;
 import org.junit.Test;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -107,15 +105,66 @@ public class TestCTSession {
         final String nonSerializableKey = "nonSerializable";
         final String nestedNonSerializableKey = "nestedNonSerializable";
         final String serializableKey = "serializable";
+        final String mapKey = "map";
+        final String listKey = "list";
         final Object serializableValue = "foo";
+        final String enumKey = "enum";
 
         CTSession s1 = new CTSession(TEST_MANAGER);
         s1.setValid(true);
         Map<String, NonSerializable> value = new HashMap<String, NonSerializable>();
         value.put("key", new NonSerializable());
+
+        Map<Object, Object> map = new HashMap<Object, Object>();
+        Map<Object, Object> submap = new HashMap<Object, Object>();
+        Map<Object, Object> submap2 = new HashMap<Object, Object>();
+
+        List<Object> list = new ArrayList<Object>();
+        List<Object> sublist = new ArrayList<Object>();
+        List<Object> sublist2 = new ArrayList<Object>();
+
+        map.put(new NonSerializable(), "123");
+        map.put(nonSerializableKey, new NonSerializable());
+        map.put(serializableKey, "123");
+        map.put(enumKey, TwoSide.LEFT);
+
+        submap.put(new NonSerializable(), serializableValue);
+        submap.put(nonSerializableKey, new NonSerializable());
+        submap.put(serializableKey, serializableValue);
+        submap.put(enumKey, TwoSide.LEFT);
+
+        submap2.put(new NonSerializable(), serializableValue);
+        submap2.put(nonSerializableKey, new NonSerializable());
+        submap2.put(serializableKey, serializableValue);
+        submap2.put(enumKey, TwoSide.RIGHT);
+
+        map.put(mapKey, submap);
+
+
+        list.add(new NonSerializable());
+        list.add(serializableValue);
+        list.add(new String[2]);
+
+        sublist.add(new NonSerializable());
+        sublist.add(serializableValue);
+        sublist.add(new String[2]);
+        sublist.add(submap2);
+
+        map.put(listKey, sublist);
+
+        sublist2.add(new NonSerializable());
+        sublist2.add(serializableValue);
+        sublist2.add(new String[2]);
+
+        list.add(sublist2);
+
+
         s1.setAttribute(nestedNonSerializableKey, value);
         s1.setAttribute(serializableKey, serializableValue);
         s1.setAttribute(nonSerializableKey, new NonSerializable());
+
+        s1.setAttribute(mapKey, map);
+        s1.setAttribute(listKey, list);
 
         CTSession s2 = serializeThenDeserialize(s1);
 
@@ -158,6 +207,9 @@ public class TestCTSession {
     }
 
 
+    private enum TwoSide {
+        RIGHT, LEFT
+    }
 
     private static class NonSerializable {
     }

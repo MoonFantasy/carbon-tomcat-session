@@ -21,7 +21,6 @@ import utils.TestUtils;
 import utils.tomcat.unittest.TesterContext;
 import utils.tomcat.unittest.TesterHost;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 
@@ -160,21 +159,6 @@ public class TestCTSessionPersistentManager {
         assertEquals(CTSessionPersistentManager.class.getSimpleName() + "/1.0", manager.getInfo());
     }
 
-    @Test
-    public void testSetRequestUriIgnorePattern() throws Exception {
-        String pattern = "abc";
-        CTSessionPersistentManager manager = getNewManager();
-        manager.setSessionIdGeneratorClassName(CTSessionIdGenerator.class.getName());
-        manager.setMaxActiveSessions(2);
-        manager.setMinIdleSwap(0);
-        manager.setSessionIdLength(128);
-        manager.setRequestUriIgnorePattern(pattern);
-        manager.start();
-
-        Field fd = CTSessionPersistentManager.class.getDeclaredField("requestUriIgnorePattern");
-        fd.setAccessible(true);
-        assertEquals(pattern, fd.get(manager));
-    }
 
     @Test
     public void testFindSession() throws Exception {
@@ -183,9 +167,7 @@ public class TestCTSessionPersistentManager {
         manager.setMaxActiveSessions(2);
         manager.setMinIdleSwap(0);
         manager.setSessionIdLength(128);
-        manager.setRequestUriIgnorePattern("abc");
         manager.start();
-
         assertNull(manager.findSession(null));
     }
 
@@ -231,18 +213,20 @@ public class TestCTSessionPersistentManager {
         String nodes = "dummy:1234, dummy2:1234";
 
         CTSessionPersistentManager manager = getNewManager();
+        manager.getContainer().getParent().getPipeline().addValve(new CTSessionHandlerValve());
         MockCacheStore store = new MockCacheStore();
         store.setNodes(nodes);
         manager.setStore(store);
         assertFalse(manager.isIgnoreRequest());
         manager.start();
 
-        Valve[] valves = manager.getContainer().getPipeline().getValves();
+        Valve[] valves = manager.getContainer().getParent().getPipeline().getValves();
         try {
             valves[0].invoke(new DummyRequest("abc.jpg"), null);
         } catch (NullPointerException e) {
         }
         assertTrue(manager.isIgnoreRequest());
+        assertNotNull(manager.findSession("abc"));
         try {
             valves[0].invoke(new DummyRequest("abc"), null);
         } catch (NullPointerException e) {
@@ -255,12 +239,14 @@ public class TestCTSessionPersistentManager {
         String nodes = "dummy:1234, dummy2:1234";
 
         CTSessionPersistentManager manager = getNewManager();
+        manager.getContainer().getParent().getPipeline().addValve(new CTSessionHandlerValve());
         MockCacheStore store = new MockCacheStore();
         store.setNodes(nodes);
         manager.setStore(store);
         manager.start();
 
         CTSessionPersistentManager manager2 = getNewManager();
+        manager2.getContainer().getParent().getPipeline().addValve(new CTSessionHandlerValve());
         MockCacheStore store2 = new MockCacheStore();
         store2.setNodes(nodes);
         manager2.setStore(store2);
@@ -276,7 +262,7 @@ public class TestCTSessionPersistentManager {
         assertNull(session2.getAttribute(attrName));
 
         //Run after request via valve
-        Valve[] valves = manager.getContainer().getPipeline().getValves();
+        Valve[] valves = manager.getContainer().getParent().getPipeline().getValves();
         try {
             valves[0].invoke(new DummyRequest("abc"), null);
         } catch (NullPointerException e) {
@@ -292,6 +278,7 @@ public class TestCTSessionPersistentManager {
         String nodes = "dummy:1234";
 
         CTSessionPersistentManager manager = getNewManager();
+        manager.getContainer().getParent().getPipeline().addValve(new CTSessionHandlerValve());
         MockCacheStore store = new MockCacheStore();
         store.setNodes(nodes);
         manager.setStore(store);
@@ -305,7 +292,7 @@ public class TestCTSessionPersistentManager {
         session.setAttribute(attrName, attrValue);
 
         //Run after request via valve afterRequest will throws IOExcepton
-        Valve[] valves = manager.getContainer().getPipeline().getValves();
+        Valve[] valves = manager.getContainer().getParent().getPipeline().getValves();
         try {
             valves[0].invoke(new DummyRequest("abc"), null);
         } catch (NullPointerException e) {

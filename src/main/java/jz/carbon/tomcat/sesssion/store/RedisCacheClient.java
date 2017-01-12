@@ -1,8 +1,6 @@
 package jz.carbon.tomcat.sesssion.store;
 
 import org.apache.catalina.session.StoreBase;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.net.URI;
 
@@ -10,7 +8,6 @@ import java.net.URI;
  * Created by jack on 2016/12/31.
  */
 public class RedisCacheClient extends AbstractCacheClient {
-    private static final Log log = LogFactory.getLog(RedisCacheClient.class);
     public static final int DEFAULT_PORT = 6379;
     public RedisCacheClient() {
         super(null);

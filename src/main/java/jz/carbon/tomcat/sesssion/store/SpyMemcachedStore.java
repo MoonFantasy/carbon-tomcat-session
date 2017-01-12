@@ -1,16 +1,11 @@
 package jz.carbon.tomcat.sesssion.store;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.IOException;
 
 /**
  * Created by jack on 2016/12/21.
  */
 public class SpyMemcachedStore extends AbstractCacheStore {
-
-    private static final Log log = LogFactory.getLog(SpyMemcachedStore.class);
 
     public SpyMemcachedStore() {
     }

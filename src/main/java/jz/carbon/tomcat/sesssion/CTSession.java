@@ -10,7 +10,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by jack on 2016/12/26.
@@ -38,12 +37,12 @@ public class CTSession extends StandardSession {
 
     protected void writeObject(ObjectOutputStream stream)
             throws IOException {
-        Set<? extends Map.Entry> entrySet = this.attributes.entrySet();
-        for (Map.Entry entry : entrySet) {
-            if ((entry.getValue() instanceof Map)) {
-                stripMapNonSerilizable((Map) entry.getValue());
-            } else if ((entry.getValue() instanceof List)) {
-                stripListNonSerilizable((List) entry.getValue());
+        String[] keys = keys();
+        for (String key : keys) {
+            if (attributes.get(key) instanceof Map) {
+                stripMapNonSerilizable((Map) attributes.get(key));
+            } else if (attributes.get(key) instanceof List) {
+                stripListNonSerilizable((List) attributes.get(key));
             }
         }
         super.writeObject(stream);
@@ -63,31 +62,37 @@ public class CTSession extends StandardSession {
     }
 
     private void stripMapNonSerilizable(Map map) {
-        Set<? extends Map.Entry> entrySet = map.entrySet();
-        for (Map.Entry entry : entrySet) {
-            if (!isSerializable(entry.getKey())) {
-                map.remove(entry.getKey());
-                log.debug("Remove from map " + entry.getKey());
-            } else if ((entry.getValue() instanceof Map)) {
-                stripMapNonSerilizable((Map) entry.getValue());
-            } else if ((entry.getValue() instanceof List)) {
-                stripListNonSerilizable((List) entry.getValue());
-            } else if (!isSerializable(entry.getValue())) {
-                map.remove(entry.getKey());
-                log.debug("Remove from map " + entry.getKey() + " " + entry.getValue());
+        Object[] keys = map.keySet().toArray();
+        for (Object key : keys) {
+            if (!isSerializable(key)) {
+                if (log.isDebugEnabled())
+                    log.debug("Remove from map " + key);
+                map.remove(key);
+            } else if ((map.get(key) instanceof Map)) {
+                stripMapNonSerilizable((Map) map.get(key));
+            } else if ((map.get(key) instanceof List)) {
+                stripListNonSerilizable((List) map.get(key));
+            } else if (!isSerializable(map.get(key))) {
+                if (log.isDebugEnabled())
+                    log.debug("Remove from map " + key + " " + map.get(key));
+                map.remove(key);
             }
         }
+
+
     }
 
     private void stripListNonSerilizable(List list) {
-        for (Object obj : list) {
+        Object[] objs = list.toArray();
+        for (Object obj : objs) {
             if ((obj instanceof Map)) {
                 stripMapNonSerilizable((Map) obj);
             } else if ((obj instanceof List)) {
                 stripListNonSerilizable((List) obj);
             } else if (!isSerializable(obj)) {
+                if (log.isDebugEnabled())
+                    log.debug("Remove from list " + obj);
                 list.remove(obj);
-                log.debug("Remove from list " + obj);
             }
         }
     }
