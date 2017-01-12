@@ -332,7 +332,7 @@ public class TestCTSessionPersistentManager {
 
         manager.start();
 
-        assertTrue(myValve.getCTSessionPersistentManager() instanceof CTSessionPersistentManager);
+//        assertTrue(myValve.getCTSessionPersistentManager() instanceof CTSessionPersistentManager);
 
     }
 

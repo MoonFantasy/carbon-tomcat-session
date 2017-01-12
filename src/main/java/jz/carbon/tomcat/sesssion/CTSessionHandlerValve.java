@@ -17,14 +17,14 @@ import java.util.regex.Pattern;
 public class CTSessionHandlerValve extends ValveBase {
     private static final Log log = LogFactory.getLog(CTSessionHandlerValve.class);
     protected CTSessionPersistentManager manager = null;
-    protected String requestUriIgnorePattern = null;
+    protected String requestUriIgnorePattern = ".*\\.(ico|png|gif|jpg|css|js)$";
 
     public void setCTSessionPersistentManager(CTSessionPersistentManager manager) {
         this.manager = manager;
 
     }
 
-    public void setSequestUriIgnorePattern(String pattern) {
+    public void setRequestUriIgnorePattern(String pattern) {
         this.requestUriIgnorePattern = pattern;
     }
 
@@ -42,7 +42,7 @@ public class CTSessionHandlerValve extends ValveBase {
                         Matcher matcher = pattern.matcher(request.getRequestURI());
                         if (matcher.find()) {
                             isMatch = true;
-                            log.debug("Ignore Request " + request.getRequestURI());
+                            log.debug("Ignore Request " + request.getRequestURI() + " thread id: " + Thread.currentThread().getId());
                         }
                     } catch (IllegalArgumentException e) {
                         log.warn("Wrong requestUriIgnorePattern format ", e);

@@ -119,7 +119,8 @@ public class TestCTSession {
 
         CTSession s2 = serializeThenDeserialize(s1);
 
-        assertNull(s2.getAttribute(nestedNonSerializableKey));
+//        assertNull(s2.getAttribute(nestedNonSerializableKey));
+        assertEquals(0, ((Map)s2.getAttribute(nestedNonSerializableKey)).size());
         assertNull(s2.getAttribute(nonSerializableKey));
         assertEquals(serializableValue, s2.getAttribute(serializableKey));
     }

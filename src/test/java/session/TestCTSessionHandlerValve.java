@@ -37,7 +37,7 @@ public class TestCTSessionHandlerValve {
     public void testInvoke() throws Exception {
         CTSessionHandlerValve valve = new CTSessionHandlerValve();
         CTSessionPersistentManager manager = getManager();
-        valve.setSequestUriIgnorePattern("abc");
+        valve.setRequestUriIgnorePattern("abc");
         valve.setNext(new DummyValve());
 
         valve.invoke(new DummyRequest(null), null);
@@ -58,7 +58,7 @@ public class TestCTSessionHandlerValve {
         valve.invoke(new DummyRequest("abc"), null);
         assertTrue(manager.isIgnoreRequest());
 
-        valve.setSequestUriIgnorePattern("[abc");
+        valve.setRequestUriIgnorePattern("[abc");
         valve.invoke(new DummyRequest("cba"), null);
         assertFalse(manager.isIgnoreRequest());
 
