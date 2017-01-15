@@ -143,7 +143,7 @@ abstract public class AbstractCacheStore extends StoreBase {
         bos = new ByteArrayOutputStream();
         oos = new ObjectOutputStream(new BufferedOutputStream(bos));
         ((CTSession) session).writeObjectData(oos);
-        oos.close();
+        oos.flush();
         return bos.toByteArray();
     }
 

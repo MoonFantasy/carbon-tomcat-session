@@ -6,14 +6,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisDataException;
 
+import java.util.HashMap;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by jack on 2017/1/6.
  */
 public class JedisMock extends Jedis {
-    private  ConcurrentHashMap<String, Pair<byte[], Long>> store = new ConcurrentHashMap<String, Pair<byte[], Long>>();
+    private  HashMap<String, Pair<byte[], Long>> store = new HashMap<String, Pair<byte[], Long>>();
     private int sw = 0;
     public JedisMock(){
 
@@ -52,7 +52,11 @@ public class JedisMock extends Jedis {
     @Override
     public Set<String> keys(final String pattern) {
         throwExcetpion(sw);
-        return store.keySet();
+        Set<String> keys;
+        synchronized (store) {
+            keys = store.keySet();
+        }
+        return keys;
     }
 
     @Override
@@ -75,8 +79,11 @@ public class JedisMock extends Jedis {
         Pair<byte[], Long> pair = store.get(storeKey);
         if (pair == null)
             return 0L;
-        store.remove(key);
-        store.put(storeKey, new MutablePair<byte[], Long>(pair.getKey(), now + seconds));
+        synchronized (store) {
+            store.remove(key);
+            store.put(storeKey, new MutablePair<byte[], Long>(pair.getKey(), now + seconds));
+        }
+
         return 1L;
     }
 
@@ -86,7 +93,9 @@ public class JedisMock extends Jedis {
         String storeKey = String.valueOf(Hex.encodeHex(key));
         long now = System.currentTimeMillis() / 1000;
         MutablePair<byte[], Long> pair = new MutablePair<byte[], Long>(value, now + seconds);
-        store.put(storeKey, pair);
+        synchronized (store) {
+            store.put(storeKey, pair);
+        }
         return "OK";
     }
 
@@ -94,9 +103,11 @@ public class JedisMock extends Jedis {
     public Long del(final byte[] key) {
         throwExcetpion(sw);
         String storeKey = String.valueOf(Hex.encodeHex(key));
-        if (store.containsKey(storeKey)) {
-            store.remove(storeKey);
-            return 1L;
+        synchronized (store) {
+            if (store.containsKey(storeKey)) {
+                store.remove(storeKey);
+                return 1L;
+            }
         }
         return 0L;
     }
@@ -104,7 +115,9 @@ public class JedisMock extends Jedis {
     @Override
     public String flushDB() {
         throwExcetpion(sw);
-        store.clear();
+        synchronized (store) {
+            store.clear();
+        }
         return "OK";
     }
 

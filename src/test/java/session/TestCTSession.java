@@ -199,7 +199,6 @@ public class TestCTSession {
             String name = names.nextElement();
             Object v1 = s1.getAttribute(name);
             Object v2 = s2.getAttribute(name);
-
             assertEquals(v1,  v2);
         }
 

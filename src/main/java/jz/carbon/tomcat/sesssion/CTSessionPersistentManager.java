@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 
 
 /**
@@ -30,6 +31,8 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     protected ThreadLocal<Boolean> currentSessionIsPersisted = new ThreadLocal<Boolean>();
     protected ThreadLocal<Boolean> currentIgnore = new ThreadLocal<Boolean>();
     protected CTSessionHandlerValve handlerValve;
+    protected String requestUriIgnorePattern = ".*\\.(ico|png|gif|jpg|css|js)$";
+
 
     static {
         try {
@@ -45,6 +48,9 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
     }
 
 
+    public Pattern getSessionAttributeValueClassNamePattern() {
+        return super.getSessionAttributeValueClassNamePattern();
+    }
 
     public CTSessionPersistentManager(int owenTenantId) {
         super(owenTenantId);
@@ -273,19 +279,29 @@ public class CTSessionPersistentManager extends CarbonTomcatSessionPersistentMan
 
     protected synchronized void startInternal() throws LifecycleException {
         super.startInternal();
+        boolean isAttached = false;
         currentIgnore.set(false);
         Pipeline pipeline = getContainer().getParent().getPipeline();
         Valve[] valves = pipeline.getValves();
         for (Valve valve : valves) {
             if (valve instanceof CTSessionHandlerValve) {
+                isAttached = true;
                 this.handlerValve = (CTSessionHandlerValve) valve;
                 if (this.handlerValve.getCTSessionPersistentManager() == null) {
                     this.handlerValve.setCTSessionPersistentManager(this);
-                    log.info("Attached to CTSessionHandlerValve after the request auto save session");
+                    log.info("Set CTSessionHandlerValve in CTSessionHandlerValve");
                 }
                 break;
             }
         }
+        if (!isAttached) {
+            CTSessionHandlerValve sessionHandlerValve = new CTSessionHandlerValve();
+            sessionHandlerValve.setCTSessionPersistentManager(this);
+            sessionHandlerValve.setRequestUriIgnorePattern(requestUriIgnorePattern);
+            pipeline.addValve(sessionHandlerValve);
+            log.info("Attached to CTSessionHandlerValve after the request auto save session");
+        }
     }
+
 
 }
